@@ -272,14 +272,15 @@ void updateArmingStatus(void)
         LED0_ON;
     } else {
         // Check if the power on arming grace time has elapsed
-        if ((getArmingDisableFlags() & ARMING_DISABLED_BOOT_GRACE_TIME) && (millis() >= systemConfig()->powerOnArmingGraceTime * 1000)
+        // Убираем отсрочку по включению
+        // if ((getArmingDisableFlags() & ARMING_DISABLED_BOOT_GRACE_TIME) && (millis() >= systemConfig()->powerOnArmingGraceTime * 1000)
 #ifdef USE_DSHOT
             // We also need to prevent arming until it's possible to send DSHOT commands.
             // Otherwise if the initial arming is in crash-flip the motor direction commands
             // might not be sent.
             && (!isMotorProtocolDshot() || dshotStreamingCommandsAreEnabled())
 #endif
-        ) {
+        {
             // If so, unset the grace time arming disable flag
             unsetArmingDisabled(ARMING_DISABLED_BOOT_GRACE_TIME);
         }
@@ -329,11 +330,11 @@ void updateArmingStatus(void)
             unsetArmingDisabled(ARMING_DISABLED_LOAD);
         }
 
-        if (isCalibrating()) {
-            setArmingDisabled(ARMING_DISABLED_CALIBRATING);
-        } else {
+        //if (isCalibrating()) {
+        //    setArmingDisabled(ARMING_DISABLED_CALIBRATING);
+        //} else {
             unsetArmingDisabled(ARMING_DISABLED_CALIBRATING);
-        }
+        //}
 
         if (isModeActivationConditionPresent(BOXPREARM)) {
             if (IS_RC_MODE_ACTIVE(BOXPREARM) && !ARMING_FLAG(WAS_ARMED_WITH_PREARM)) {
@@ -641,6 +642,7 @@ static void updateInflightCalibrationState(void)
         InflightcalibratingA = 50;
         AccInflightCalibrationArmed = false;
     }
+    /*
     if (IS_RC_MODE_ACTIVE(BOXCALIB)) {      // Use the Calib Option to activate : Calib = TRUE measurement started, Land and Calib = 0 measurement stored
         if (!AccInflightCalibrationActive && !AccInflightCalibrationMeasurementDone)
             InflightcalibratingA = 50;
@@ -649,6 +651,8 @@ static void updateInflightCalibrationState(void)
         AccInflightCalibrationMeasurementDone = false;
         AccInflightCalibrationSavetoEEProm = true;
     }
+    */
+    // пропускаем калибровку 
 }
 
 #if defined(USE_GPS) || defined(USE_MAG)
