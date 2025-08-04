@@ -180,6 +180,7 @@ PG_RESET_TEMPLATE(throttleCorrectionConfig_t, throttleCorrectionConfig,
     .throttle_correction_angle = 800     // could be 80.0 deg with atlhold or 45.0 for fpv
 );
 
+/*
 static bool isCalibrating(void)
 {
     return (sensors(SENSOR_GYRO) && !gyroIsCalibrationComplete())
@@ -194,6 +195,8 @@ static bool isCalibrating(void)
 #endif
         ;
 }
+*/
+// Убираем все калибровки 
 
 #ifdef USE_LAUNCH_CONTROL
 bool canUseLaunchControl(void)
