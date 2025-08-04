@@ -496,7 +496,8 @@ static void osdCompleteInitialization(void)
     }
 #endif
 
-    resumeRefreshAt = micros() + (4 * REFRESH_1S);
+    //resumeRefreshAt = micros() + (4 * REFRESH_1S);
+    resumeRefreshAt = micros(); // сразу разрешаем обновления
 #ifdef USE_OSD_PROFILES
     setOsdProfile(osdConfig()->osdProfileIndex);
 #endif
