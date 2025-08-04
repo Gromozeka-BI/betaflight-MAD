@@ -1005,7 +1005,7 @@ void init(void)
     }
 #endif
 
-    setArmingDisabled(ARMING_DISABLED_BOOT_GRACE_TIME);
+    //setArmingDisabled(ARMING_DISABLED_BOOT_GRACE_TIME);
 
     // On F4/F7 allocate SPI DMA streams before motor timers
 #if defined(STM32F4) || defined(STM32F7)
