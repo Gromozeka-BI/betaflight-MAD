@@ -896,13 +896,13 @@ void cmsMenuOpen(void)
         }
         cmsInMenu = true;
         currentCtx = (cmsCtx_t){ NULL, 0, 0 };
-        /*startMenu = &cmsx_menuMain;
+        startMenu = &cmsx_menuMain;
 
         if (osdConfig()->extra_osd_use_quick_menu)
         {
             startMenu = &cmsx_menuQuick;
         }
-        */
+        
         menuStackIdx = 0;
         setArmingDisabled(ARMING_DISABLED_CMS_MENU);
         displayLayerSelect(pCurrentDisplay, DISPLAYPORT_LAYER_FOREGROUND); // make sure the foreground layer is active
@@ -968,7 +968,7 @@ void cmsMenuOpen(void)
         maxMenuItems      = pCurrentDisplay->rows;
     }
     // Пропускаем вызов cmsMenuChange, чтобы не открывать меню
-    //cmsMenuChange(pCurrentDisplay, startMenu);
+    cmsMenuChange(pCurrentDisplay, startMenu);
 }
 
 static void cmsTraverseGlobalExit(const CMS_Menu *pMenu)
