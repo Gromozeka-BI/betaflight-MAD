@@ -184,10 +184,18 @@ static void gyroSetCalibrationCycles(gyroSensor_t *gyroSensor)
 
 void gyroStartCalibration(bool isFirstArmingCalibration)
 {
+    if (gyroConfig()->gyroCalibrationSaved && !forceGyroCalibration) {
+        gyro.gyroSensor1.gyroDev.gyroZero[X] = gyroConfig()->storedGyroZero[X];
+        gyro.gyroSensor1.gyroDev.gyroZero[Y] = gyroConfig()->storedGyroZero[Y];
+        gyro.gyroSensor1.gyroDev.gyroZero[Z] = gyroConfig()->storedGyroZero[Z];
+        gyro.gyroSensor1.calibration.cyclesRemaining = 0;  // Помечаем калибровку как завершённую
+        return;
+    }
+    /*
     if (isFirstArmingCalibration && firstArmingCalibrationWasStarted) {
         return;
     }
-
+    */
     gyroSetCalibrationCycles(&gyro.gyroSensor1);
 #ifdef USE_MULTI_GYRO
     gyroSetCalibrationCycles(&gyro.gyroSensor2);
@@ -201,6 +209,16 @@ void gyroStartCalibration(bool isFirstArmingCalibration)
 bool isFirstArmingGyroCalibrationRunning(void)
 {
     return firstArmingCalibrationWasStarted && !gyroIsCalibrationComplete();
+}
+
+void saveGyroCalibration(void) {
+    gyroConfigMutable()->storedGyroZero[X] = (int16_t)gyro.gyroSensor1.gyroDev.gyroZero[X];
+    gyroConfigMutable()->storedGyroZero[Y] = (int16_t)gyro.gyroSensor1.gyroDev.gyroZero[Y];
+    gyroConfigMutable()->storedGyroZero[Z] = (int16_t)gyro.gyroSensor1.gyroDev.gyroZero[Z];
+    gyroConfigMutable()->gyroCalibrationSaved = 1;
+    
+    writeEEPROM();  // Сохраняем конфигурацию во Flash (если используется Betaflight/EEPROM)
+    beeper(BEEPER_GYRO_CALIBRATED);  // Сигнал о сохранении
 }
 
 STATIC_UNIT_TESTED NOINLINE void performGyroCalibration(gyroSensor_t *gyroSensor, uint8_t gyroMovementCalibrationThreshold)
