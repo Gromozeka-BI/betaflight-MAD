@@ -263,6 +263,9 @@ STATIC_UNIT_TESTED NOINLINE void performGyroCalibration(gyroSensor_t *gyroSensor
         if (!firstArmingCalibrationWasStarted || (getArmingDisableFlags() & ~ARMING_DISABLED_CALIBRATING) == 0) {
             beeper(BEEPER_GYRO_CALIBRATED);
         }
+        if (!firstArmingCalibrationWasStarted) {
+            saveGyroCalibration();
+        }
     }
 
     --gyroSensor->calibration.cyclesRemaining;
