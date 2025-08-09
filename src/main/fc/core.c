@@ -180,7 +180,7 @@ PG_RESET_TEMPLATE(throttleCorrectionConfig_t, throttleCorrectionConfig,
     .throttle_correction_angle = 800     // could be 80.0 deg with atlhold or 45.0 for fpv
 );
 
-static bool isCalibrating(void)
+static bool isCalibrating(void) // пока не отключаем калибровку 
 {
     return (sensors(SENSOR_GYRO) && !gyroIsCalibrationComplete())
 #ifdef USE_ACC
@@ -272,6 +272,7 @@ void updateArmingStatus(void)
         LED0_ON;
     } else {
         // Check if the power on arming grace time has elapsed
+        // тоже пока не трогаем калибровку 
         if ((getArmingDisableFlags() & ARMING_DISABLED_BOOT_GRACE_TIME) && (millis() >= systemConfig()->powerOnArmingGraceTime * 1000)
 #ifdef USE_DSHOT
             // We also need to prevent arming until it's possible to send DSHOT commands.
@@ -328,7 +329,7 @@ void updateArmingStatus(void)
         } else {
             unsetArmingDisabled(ARMING_DISABLED_LOAD);
         }
-
+        // Пока не отключаем проверку калибровок
         if (isCalibrating()) {
             setArmingDisabled(ARMING_DISABLED_CALIBRATING);
         } else {
