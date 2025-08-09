@@ -184,7 +184,7 @@ static void gyroSetCalibrationCycles(gyroSensor_t *gyroSensor)
 
 void gyroStartCalibration(bool isFirstArmingCalibration)
 {
-    if (gyroConfig()->gyroCalibrationSaved && !forceGyroCalibration) {
+    if (gyroConfig()->gyroCalibrationSaved/* && !forceGyroCalibration*/) {
         gyro.gyroSensor1.gyroDev.gyroZero[X] = gyroConfig()->storedGyroZero[X];
         gyro.gyroSensor1.gyroDev.gyroZero[Y] = gyroConfig()->storedGyroZero[Y];
         gyro.gyroSensor1.gyroDev.gyroZero[Z] = gyroConfig()->storedGyroZero[Z];
