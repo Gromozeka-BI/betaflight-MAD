@@ -402,7 +402,7 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
 
     osdConfig->distance_alarm = 0;
     osdConfig->logo_on_arming = OSD_LOGO_ARMING_OFF;
-    osdConfig->logo_on_arming_duration = 5;  // 0.5 seconds
+    osdConfig->logo_on_arming_duration = 0;  // 0.5 seconds
 
     osdConfig->camera_frame_width = 24;
     osdConfig->camera_frame_height = 11;
@@ -1196,7 +1196,8 @@ static timeDelta_t osdShowArmed(void)
         osdDrawLogo(midCol - (OSD_LOGO_COLS) / 2, midRow - 5);
         ret = osdConfig()->logo_on_arming_duration * 1e5;
     } else {
-        ret = (REFRESH_1S / 2);
+        // ret = (REFRESH_1S / 2);
+        ret = 0;
     }
     displayWrite(osdDisplayPort, midCol - (strlen(pilotConfig()->extraArmedWarning) / 2), midRow, DISPLAYPORT_SEVERITY_NORMAL, pilotConfig()->extraArmedWarning);
 

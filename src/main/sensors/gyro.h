@@ -198,6 +198,8 @@ typedef struct gyroConfig_s {
     uint8_t gyro_lpf1_dyn_expo; // set the curve for dynamic gyro lowpass filter
     uint8_t simplified_gyro_filter;
     uint8_t simplified_gyro_filter_multiplier;
+    int16_t storedGyroZero[3];  // X, Y, Z
+    uint8_t gyroCalibrationSaved;  // Флаг, что калибровка сохранена
 } gyroConfig_t;
 
 PG_DECLARE(gyroConfig_t, gyroConfig);

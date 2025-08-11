@@ -969,7 +969,8 @@ void init(void)
     }
 #endif
 
-    setArmingDisabled(ARMING_DISABLED_BOOT_GRACE_TIME);
+    // убираем обязательную паузу
+    //setArmingDisabled(ARMING_DISABLED_BOOT_GRACE_TIME);
 
 // allocate SPI DMA streams before motor timers
 #if defined(USE_SPI) && defined(USE_SPI_DMA_ENABLE_EARLY)
