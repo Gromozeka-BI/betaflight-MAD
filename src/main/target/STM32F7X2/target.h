@@ -213,4 +213,3 @@
 #define GYRO_1_ALIGN CW270_DEG
 
 #define USE_LED_STRIP
-#define USE_LED_STRIP_64
