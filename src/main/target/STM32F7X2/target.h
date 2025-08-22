@@ -77,3 +77,6 @@
 #define USE_EXTI
 
 #define FLASH_PAGE_SIZE ((uint32_t)0x4000) // 16K sectors
+
+#define USE_LED_STRIP
+#define USE_LED_STRIP_64
