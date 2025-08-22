@@ -24,6 +24,60 @@
 
 #define USBD_PRODUCT_STRING     "Betaflight STM32F7x2"
 
+#define USE_I2C_DEVICE_1
+#define USE_I2C_DEVICE_2
+#define USE_I2C_DEVICE_3
+
+#define USE_VCP
+
+#define USE_SOFTSERIAL
+
+#define UNIFIED_SERIAL_PORT_COUNT       3
+
+#define USE_UART1
+#define USE_UART2
+#define USE_UART3
+#define USE_UART4
+#define USE_UART5
+#define USE_UART6
+
+#define SERIAL_PORT_COUNT       (UNIFIED_SERIAL_PORT_COUNT + 6)
+
+#define USE_SPI_DEVICE_1
+#define USE_SPI_DEVICE_2
+#define USE_SPI_DEVICE_3
+
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC 0xffff
+#define TARGET_IO_PORTD 0xffff
+#define TARGET_IO_PORTE 0xffff
+#define TARGET_IO_PORTF 0xffff
+
+#define USE_I2C
+#define I2C_FULL_RECONFIGURABILITY
+
+#define USE_BEEPER
+
+#ifdef USE_SDCARD
+#define USE_SDCARD_SPI
+#define USE_SDCARD_SDIO
+#endif
+
+#define USE_SPI
+#define SPI_FULL_RECONFIGURABILITY
+#define USE_SPI_DMA_ENABLE_EARLY
+
+#define USE_USB_DETECT
+
+#define USE_ESCSERIAL
+
+#define USE_ADC
+
+#define USE_EXTI
+
+#define FLASH_PAGE_SIZE ((uint32_t)0x4000) // 16K sectors
+
 #define USE_GYRO
 #define USE_GYRO_SPI_MPU6000
 #define USE_ACC
@@ -157,6 +211,3 @@
 #define USE_SPI_GYRO
 #define GYRO_1_SPI_INSTANCE SPI1
 #define GYRO_1_ALIGN CW270_DEG
-
-#define USE_LED_STRIP
-#define USE_LED_STRIP_64
