@@ -78,5 +78,18 @@
 
 #define FLASH_PAGE_SIZE ((uint32_t)0x4000) // 16K sectors
 
+#define LED_STRIP_PIN        PA15
+
+#define TIMER_PIN_MAPPING \
+    TIMER_PIN_MAP( 0, PB7 , 1,  0) \
+    TIMER_PIN_MAP( 1, PA9 , 1,  0) \
+    TIMER_PIN_MAP( 2, PA8 , 1,  0) \
+    TIMER_PIN_MAP( 3, PC9 , 2,  0) \
+    TIMER_PIN_MAP( 4, PC8 , 2,  0) \
+    TIMER_PIN_MAP( 5, PC6 , 2,  0) \
+    TIMER_PIN_MAP( 6, PC7 , 2,  0) \
+    TIMER_PIN_MAP( 7, PA15, 1,  0) \
+    TIMER_PIN_MAP( 8, PB3 , 1,  0)
+
 #define USE_LED_STRIP
 #define USE_LED_STRIP_64
