@@ -4986,6 +4986,8 @@ static void printVersion(bool printBoardInfo)
         MSP_API_VERSION_STRING
     );
 
+    //New line
+
     cliPrintLinefeed();
 
 #if defined(__CONFIG_REVISION__)
