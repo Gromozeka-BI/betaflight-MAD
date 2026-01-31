@@ -578,10 +578,6 @@ TARGETS_CLEAN = $(addsuffix _clean,$(BASE_TARGETS))
 
 CONFIGS_CLEAN = $(addsuffix _clean,$(BASE_CONFIGS))
 
-## %_real            : build target/config with real git revision
-%_real:
-	REVISION=$(REAL_REVISION) $(MAKE) $(patsubst %_real,%,$@)
-
 ## clean             : clean up temporary / machine-generated files
 clean:
 	@echo "Cleaning $(TARGET_NAME)"
