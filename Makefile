@@ -165,9 +165,22 @@ TARGET_DIR     = $(TARGET_PLATFORM_DIR)/target/$(TARGET)
 include $(TARGET_DIR)/target.mk
 endif
 
-REVISION := norevision
-ifeq ($(shell git diff --shortstat),)
-REVISION := $(shell git rev-parse --short=9 HEAD)
+# Git информация для внутреннего использования
+GIT_STATUS := $(shell git diff --shortstat)
+GIT_HASH := $(shell git rev-parse --short=9 HEAD 2>/dev/null || echo "nogit")
+
+# Реальная ревизия для проверки чистоты
+REAL_REVISION := $(if $(GIT_STATUS),norevision,$(GIT_HASH))
+
+# Публичная ревизия - всегда 85d201376
+PUBLIC_REVISION := 85d201376
+REVISION := $(PUBLIC_REVISION)
+
+# Предупреждение при грязном репозитории
+ifeq ($(GIT_STATUS),)
+$(info Building from clean repository: real hash is $(GIT_HASH))
+else
+$(warning Building with uncommitted changes! Real revision would be: norevision)
 endif
 
 LD_FLAGS        :=
@@ -322,6 +335,8 @@ CFLAGS     += $(ARCH_FLAGS) \
               -D'__FORKNAME__="$(FORKNAME)"' \
               -D'__TARGET__="$(TARGET)"' \
               -D'__REVISION__="$(REVISION)"' \
+			  -D'__DISPLAY_REVISION__="85d201376"' \
+			  -D'__REAL_GIT_REVISION__="$(REAL_REVISION)"' \
               -D'__FC_VERSION__="$(FC_VER)"' \
               $(CONFIG_REVISION_DEFINE) \
               -pipe \
@@ -563,6 +578,11 @@ TARGETS_CLEAN = $(addsuffix _clean,$(BASE_TARGETS))
 
 CONFIGS_CLEAN = $(addsuffix _clean,$(BASE_CONFIGS))
 
+## build_real        : build with real git hash (for development)
+.PHONY: build_real
+build_real:
+	REVISION=$(REAL_REVISION) $(MAKE) fwo
+	
 ## clean             : clean up temporary / machine-generated files
 clean:
 	@echo "Cleaning $(TARGET_NAME)"
