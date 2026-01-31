@@ -578,11 +578,11 @@ TARGETS_CLEAN = $(addsuffix _clean,$(BASE_TARGETS))
 
 CONFIGS_CLEAN = $(addsuffix _clean,$(BASE_CONFIGS))
 
-## build_real        : build with real git hash (for development)
-.PHONY: build_real
-build_real:
-	REVISION=$(REAL_REVISION) $(MAKE) fwo
-	
+## real              : build current target/config with real git revision
+.PHONY: real
+real:
+	REVISION=$(REAL_REVISION) $(MAKE) fwo TARGET="$(TARGET)" CONFIG="$(CONFIG)" EXTRA_FLAGS="$(EXTRA_FLAGS)" OPTIONS="$(OPTIONS)" DEBUG="$(DEBUG)"
+
 ## clean             : clean up temporary / machine-generated files
 clean:
 	@echo "Cleaning $(TARGET_NAME)"
