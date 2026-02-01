@@ -432,6 +432,15 @@ static void applyRpmLimiter(mixerRuntime_t *mixer)
     throttle = constrainf(throttle - pidOutput, 0.0f, 1.0f);
     prevError = error;
 
+    float dynamic = rcData[AUX5] - 1000.0f; // считываем значение с 5 канала
+    dynamic = constrainf(dynamic / (PWM_RANGE_MAX - PWM_RANGE_MIN), 0.0f, 1.0f);
+    dynamic = dynamic * 100.0f; // формат значений 0..100
+
+    float dynamicActivate = rcData[AUX6] - 1000.0f; // считываем значение с 6 канала
+    dynamicActivate = constrainf(dynamicActivate / (PWM_RANGE_MAX - PWM_RANGE_MIN), 0.0f, 1.0f);
+    dynamicActivate = dynamicActivate * 100.0f; // формат значений 0..100
+
+
     DEBUG_SET(DEBUG_RPM_LIMIT, 0, lrintf(averageRpm));
     DEBUG_SET(DEBUG_RPM_LIMIT, 1, lrintf(rpmLimiterThrottleScaleOffset * 100.0f));
     DEBUG_SET(DEBUG_RPM_LIMIT, 2, lrintf(mixer->rpmLimiterThrottleScale * 100.0f));
