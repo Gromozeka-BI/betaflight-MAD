@@ -165,22 +165,69 @@ TARGET_DIR     = $(TARGET_PLATFORM_DIR)/target/$(TARGET)
 include $(TARGET_DIR)/target.mk
 endif
 
+# ====================================================================
+# Git revision handling configuration
+# ====================================================================
+
+# Режим отображения ревизии (можно задать через командную строку):
+#   fixed     - всегда показывать фиксированную ревизию (по умолчанию)
+#   actual    - показывать реальный хеш коммита
+#   custom    - использовать кастомную ревизию через FIXED_REVISION
+#   auto      - показывать фиксированную ревизию для чистого репозитория, иначе 'norevision'
+REVISION_MODE ?= fixed
+
+# Фиксированная ревизия для отображения (используется в режиме 'fixed' или 'auto')
+FIXED_REVISION ?= 85d201376
+
+# Кастомная ревизия (используется в режиме 'custom')
+CUSTOM_REVISION ?=
+
 # Git информация для внутреннего использования
-GIT_STATUS := $(shell git diff --shortstat)
+GIT_STATUS := $(shell git diff --shortstat 2>/dev/null)
 GIT_HASH := $(shell git rev-parse --short=9 HEAD 2>/dev/null || echo "nogit")
 
-# Реальная ревизия для проверки чистоты
-REAL_REVISION := $(if $(GIT_STATUS),norevision,$(GIT_HASH))
+# Функция определения реальной ревизии (для сборки)
+ifeq ($(GIT_STATUS),)
+REAL_REVISION := $(GIT_HASH)
+else
+REAL_REVISION := norevision
+endif
 
-# Публичная ревизия - всегда 85d201376
-PUBLIC_REVISION := 85d201376
-REVISION := $(PUBLIC_REVISION)
+# Определение отображаемой ревизии в зависимости от режима
+ifeq ($(REVISION_MODE),actual)
+    # Режим: показывать реальный хеш
+    DISPLAY_REVISION := $(REAL_REVISION)
+    $(info Revision mode: actual - showing real git hash)
+else ifeq ($(REVISION_MODE),custom)
+    # Режим: использовать кастомную ревизию
+    ifeq ($(CUSTOM_REVISION),)
+        $(error CUSTOM_REVISION must be specified when REVISION_MODE=custom)
+    endif
+    DISPLAY_REVISION := $(CUSTOM_REVISION)
+    $(info Revision mode: custom - using custom revision: $(CUSTOM_REVISION))
+else ifeq ($(REVISION_MODE),auto)
+    # Режим: автоматический - фиксированная для чистого, norevision для грязного
+    ifeq ($(GIT_STATUS),)
+        DISPLAY_REVISION := $(FIXED_REVISION)
+        $(info Revision mode: auto - clean repo, using fixed revision: $(FIXED_REVISION))
+    else
+        DISPLAY_REVISION := norevision
+        $(warning Revision mode: auto - dirty repo, showing: norevision)
+    endif
+else
+    # Режим по умолчанию: фиксированный (fixed)
+    DISPLAY_REVISION := $(FIXED_REVISION)
+    $(info Revision mode: fixed - always showing: $(FIXED_REVISION))
+endif
+
+# Ревизия для использования в сборке
+REVISION := $(DISPLAY_REVISION)
 
 # Предупреждение при грязном репозитории
-ifeq ($(GIT_STATUS),)
-$(info Building from clean repository: real hash is $(GIT_HASH))
+ifneq ($(GIT_STATUS),)
+$(warning Building with uncommitted changes! Real revision would be: $(REAL_REVISION))
 else
-$(warning Building with uncommitted changes! Real revision would be: norevision)
+$(info Building from clean repository: real hash is $(GIT_HASH))
 endif
 
 LD_FLAGS        :=
@@ -335,8 +382,9 @@ CFLAGS     += $(ARCH_FLAGS) \
               -D'__FORKNAME__="$(FORKNAME)"' \
               -D'__TARGET__="$(TARGET)"' \
               -D'__REVISION__="$(REVISION)"' \
-			  -D'__DISPLAY_REVISION__="85d201376"' \
-			  -D'__REAL_GIT_REVISION__="$(REAL_REVISION)"' \
+              -D'__DISPLAY_REVISION__="$(DISPLAY_REVISION)"' \
+              -D'__REAL_GIT_REVISION__="$(REAL_REVISION)"' \
+              -D'__REVISION_MODE__="$(REVISION_MODE)"' \
               -D'__FC_VERSION__="$(FC_VER)"' \
               $(CONFIG_REVISION_DEFINE) \
               -pipe \
@@ -578,6 +626,47 @@ TARGETS_CLEAN = $(addsuffix _clean,$(BASE_TARGETS))
 
 CONFIGS_CLEAN = $(addsuffix _clean,$(BASE_CONFIGS))
 
+## build_fixed       : build with fixed revision display (default)
+.PHONY: build_fixed
+build_fixed:
+	$(MAKE) fwo REVISION_MODE=fixed
+
+## build_actual      : build with actual git revision display
+.PHONY: build_actual
+build_actual:
+	$(MAKE) fwo REVISION_MODE=actual
+
+## build_custom      : build with custom revision display
+.PHONY: build_custom
+build_custom:
+ifndef REV
+	$(error Please specify revision with REV= parameter, e.g., make build_custom REV=abc123def)
+endif
+	$(MAKE) fwo REVISION_MODE=custom CUSTOM_REVISION=$(REV)
+
+## build_auto        : build with auto mode (fixed if clean, otherwise norevision)
+.PHONY: build_auto
+build_auto:
+	$(MAKE) fwo REVISION_MODE=auto
+
+## build_real        : build with real git hash (for development, legacy support)
+.PHONY: build_real
+build_real:
+	$(MAKE) fwo REVISION_MODE=actual
+
+## revision_info     : show current revision information
+.PHONY: revision_info
+revision_info:
+	@echo "========================================"
+	@echo "Git Revision Information"
+	@echo "========================================"
+	@echo "Real Git Hash:      $(REAL_REVISION)"
+	@echo "Display Revision:   $(DISPLAY_REVISION)"
+	@echo "Revision Mode:      $(REVISION_MODE)"
+	@echo "Fixed Revision:     $(FIXED_REVISION)"
+	@echo "Git Status:         $(if $(GIT_STATUS),Dirty,Clean)"
+	@echo "========================================"
+
 ## clean             : clean up temporary / machine-generated files
 clean:
 	@echo "Cleaning $(TARGET_NAME)"
@@ -729,6 +818,19 @@ help: Makefile mk/tools.mk
 	@echo "        make <target> [V=<verbosity>] [OPTIONS=\"<options>\"] [EXTRA_FLAGS=\"<extra_flags>\"]"
 	@echo "Or:"
 	@echo "        make <config-target> [V=<verbosity>] [OPTIONS=\"<options>\"] [EXTRA_FLAGS=\"<extra_flags>\"]"
+	@echo ""
+	@echo "Revision display modes (use REVISION_MODE=):"
+	@echo "        fixed     - always show fixed revision: $(FIXED_REVISION)"
+	@echo "        actual    - show actual git hash"
+	@echo "        custom    - use custom revision (set CUSTOM_REVISION)"
+	@echo "        auto      - fixed if clean repo, otherwise 'norevision'"
+	@echo ""
+	@echo "Quick commands:"
+	@echo "        make build_fixed      - build with fixed revision (default)"
+	@echo "        make build_actual     - build with actual git revision"
+	@echo "        make build_custom     - build with custom revision"
+	@echo "        make build_auto       - build with auto detection"
+	@echo "        make revision_info    - show revision information"
 	@echo ""
 	@echo "To populate configuration targets:"
 	@echo "        make configs"
