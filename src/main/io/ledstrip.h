@@ -154,6 +154,12 @@ typedef enum {
     LED_PROFILE_COUNT
 } ledProfile_e;
 
+typedef enum {
+    LED_OUTPUT_STRIP = 0,
+    LED_OUTPUT_UART,
+    LED_OUTPUT_COUNT
+} ledOutput_e;
+
 typedef struct modeColorIndexes_s {
     uint8_t color[LED_DIRECTION_COUNT];
 } modeColorIndexes_t;
@@ -185,6 +191,7 @@ typedef struct ledStripConfig_s {
     uint8_t ledstrip_brightness;
     uint16_t ledstrip_rainbow_delta;
     uint16_t ledstrip_rainbow_freq;
+    uint8_t ledstrip_output;
 } ledStripConfig_t;
 
 PG_DECLARE(ledStripConfig_t, ledStripConfig);

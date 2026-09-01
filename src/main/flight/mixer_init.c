@@ -38,8 +38,11 @@
 #include "fc/runtime_config.h"
 
 #include "mixer.h"
+#include "flight/boost_mode.h"
 #include "flight/mixer_tricopter.h"
 #include "flight/pid.h"
+
+#include "pg/motor.h"
 
 #include "rx/rx.h"
 
@@ -51,7 +54,7 @@
 #define YAW_MOTORS_REVERSED 0
 #endif
 
-PG_REGISTER_WITH_RESET_FN(mixerConfig_t, mixerConfig, PG_MIXER_CONFIG, 2);
+PG_REGISTER_WITH_RESET_FN(mixerConfig_t, mixerConfig, PG_MIXER_CONFIG, 5);
 
 void pgResetFn_mixerConfig(mixerConfig_t *mixerConfig)
 {
@@ -69,11 +72,43 @@ void pgResetFn_mixerConfig(mixerConfig_t *mixerConfig)
 #endif
     mixerConfig->mixer_type = MIXER_LEGACY;
 #ifdef USE_RPM_LIMIT
+#ifdef USE_BOOST_MODE_SPEC
+    mixerConfig->rpm_limit = true;
+    mixerConfig->rpm_limit_p = BOOST_MODE_SPEC_RPM_P;
+    mixerConfig->rpm_limit_i = BOOST_MODE_SPEC_RPM_I;
+    mixerConfig->rpm_limit_d = BOOST_MODE_SPEC_RPM_D;
+    mixerConfig->rpm_limit_value = BOOST_MODE_SPEC_RPM_LIMIT;
+    mixerConfig->rpm_limit_boost = BOOST_MODE_SPEC_RPM_BOOST;
+    mixerConfig->rpm_limit_boost_duration = BOOST_MODE_SPEC_DURATION_S;
+    mixerConfig->rpm_limit_boost_count = BOOST_MODE_SPEC_COUNT;
+    mixerConfig->rpm_limit_boost_hold = BOOST_MODE_SPEC_HOLD_TO_USE;
+    mixerConfig->rpm_limit_boost_reset = BOOST_MODE_SPEC_RESET_DISARM;
+    mixerConfig->rpm_limit_boost_delay = BOOST_MODE_SPEC_FLIGHT_DELAY_S;
+    mixerConfig->rpm_limit_boost_delay_reset = BOOST_MODE_SPEC_DELAY_RESET;
+    mixerConfig->rpm_limit_boost_count_reset = BOOST_MODE_SPEC_COUNT_RESET;
+    mixerConfig->rpm_limit_boost_led = BOOST_MODE_SPEC_LED;
+    mixerConfig->rpm_limit_boost_led_hz = BOOST_MODE_SPEC_LED_HZ;
+#else
     mixerConfig->rpm_limit = false;
     mixerConfig->rpm_limit_p = 25;
     mixerConfig->rpm_limit_i = 10;
     mixerConfig->rpm_limit_d = 8;
-    mixerConfig->rpm_limit_value = 18000;
+#ifdef USE_BOOST_MODE
+    mixerConfig->rpm_limit_value = BOOST_MODE_DEFAULT_RPM_LIMIT;
+    mixerConfig->rpm_limit_boost = BOOST_MODE_DEFAULT_RPM_BOOST;
+    mixerConfig->rpm_limit_boost_duration = BOOST_MODE_DEFAULT_DURATION_S;
+    mixerConfig->rpm_limit_boost_count = BOOST_MODE_DEFAULT_COUNT;
+    mixerConfig->rpm_limit_boost_hold = false;
+    mixerConfig->rpm_limit_boost_reset = false;
+    mixerConfig->rpm_limit_boost_delay = BOOST_MODE_DEFAULT_DELAY_S;
+    mixerConfig->rpm_limit_boost_delay_reset = false;
+    mixerConfig->rpm_limit_boost_count_reset = false;
+    mixerConfig->rpm_limit_boost_led = true;
+    mixerConfig->rpm_limit_boost_led_hz = BOOST_MODE_DEFAULT_LED_HZ;
+#else
+    mixerConfig->rpm_limit_value = 19600;
+#endif
+#endif
 #endif
 }
 
@@ -377,14 +412,46 @@ void mixerInitProfile(void)
 #endif
 
 #ifdef USE_RPM_LIMIT
+#ifdef USE_BOOST_MODE_SPEC
+    mixerConfigMutable()->rpm_limit = true;
+    mixerConfigMutable()->rpm_limit_value = BOOST_MODE_SPEC_RPM_LIMIT;
+    mixerConfigMutable()->rpm_limit_p = BOOST_MODE_SPEC_RPM_P;
+    mixerConfigMutable()->rpm_limit_i = BOOST_MODE_SPEC_RPM_I;
+    mixerConfigMutable()->rpm_limit_d = BOOST_MODE_SPEC_RPM_D;
+    mixerConfigMutable()->rpm_limit_boost = BOOST_MODE_SPEC_RPM_BOOST;
+    mixerConfigMutable()->rpm_limit_boost_duration = BOOST_MODE_SPEC_DURATION_S;
+    mixerConfigMutable()->rpm_limit_boost_count = BOOST_MODE_SPEC_COUNT;
+    mixerConfigMutable()->rpm_limit_boost_hold = BOOST_MODE_SPEC_HOLD_TO_USE;
+    mixerConfigMutable()->rpm_limit_boost_delay = BOOST_MODE_SPEC_FLIGHT_DELAY_S;
+    mixerConfigMutable()->rpm_limit_boost_delay_reset = BOOST_MODE_SPEC_DELAY_RESET;
+    mixerConfigMutable()->rpm_limit_boost_count_reset = BOOST_MODE_SPEC_COUNT_RESET;
+    mixerConfigMutable()->rpm_limit_boost_led = BOOST_MODE_SPEC_LED;
+    mixerConfigMutable()->rpm_limit_boost_led_hz = BOOST_MODE_SPEC_LED_HZ;
+#ifdef USE_DSHOT_TELEMETRY
+    motorConfigMutable()->dev.useDshotTelemetry = true;
+#endif
+#endif
+#ifdef USE_BOOST_MODE
+    mixerRuntime.rpmLimiterRpmLimit = getBoostBaseRpm();
+#else
     mixerRuntime.rpmLimiterRpmLimit = mixerConfig()->rpm_limit_value;
+#endif
+#ifdef USE_BOOST_MODE_SPEC
+    mixerRuntime.rpmLimiterPGain = BOOST_MODE_SPEC_RPM_P * 15e-6f;
+    mixerRuntime.rpmLimiterIGain = BOOST_MODE_SPEC_RPM_I * 1e-3f * pidGetDT();
+    mixerRuntime.rpmLimiterDGain = BOOST_MODE_SPEC_RPM_D * 3e-7f * pidGetPidFrequency();
+#else
     mixerRuntime.rpmLimiterPGain = mixerConfig()->rpm_limit_p * 15e-6f;
     mixerRuntime.rpmLimiterIGain = mixerConfig()->rpm_limit_i * 1e-3f * pidGetDT();
     mixerRuntime.rpmLimiterDGain = mixerConfig()->rpm_limit_d * 3e-7f * pidGetPidFrequency();
+#endif
     mixerRuntime.rpmLimiterI = 0.0f;
     pt1FilterInit(&mixerRuntime.rpmLimiterAverageRpmFilter, pt1FilterGain(6.0f, pidGetDT()));
     pt1FilterInit(&mixerRuntime.rpmLimiterThrottleScaleOffsetFilter, pt1FilterGain(2.0f, pidGetDT()));
     mixerResetRpmLimiter();
+#ifdef USE_BOOST_MODE
+    boostModeInit();
+#endif
 #endif
 
     mixerRuntime.ezLandingThreshold = 2.0f * currentPidProfile->ez_landing_threshold / 100.0f;

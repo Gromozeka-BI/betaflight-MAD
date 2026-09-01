@@ -1,0 +1,10 @@
+# MCU-core SPEC. Do not add CLOUD_BUILD or flags already #defined in classic common_pre.h
+# (USE_DSHOT, USE_PINIO, USE_SERIALRX, USE_OSD_HD, USE_VTX, …) — they -Werror=redefine.
+# 512 KB cores also need OPTIONS_512 from scripts/build_spec_mcu.sh.
+USE_BOOST_MODE_SPEC
+USE_RACE_PRO
+USE_GPS
+USE_LED_STRIP
+USE_LED_STRIP_64
+USE_SOFTSERIAL
+USE_ACRO_TRAINER

@@ -22,7 +22,13 @@
 
 #include "common/utils.h"
 
+#ifdef USE_BOOST_MODE_SPEC
+#define FC_FIRMWARE_NAME            "Betaflight-BOOST-SPEC"
+#elif defined(USE_BOOST_MODE)
+#define FC_FIRMWARE_NAME            "Betaflight-BOOST"
+#else
 #define FC_FIRMWARE_NAME            "Betaflight"
+#endif
 #define FC_FIRMWARE_IDENTIFIER      "BTFL"
 
 #define FC_CALVER_BASE_YEAR 2000

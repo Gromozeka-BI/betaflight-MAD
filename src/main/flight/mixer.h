@@ -104,6 +104,18 @@ typedef struct mixerConfig_s {
     uint16_t rpm_limit_i;
     uint16_t rpm_limit_d;
     uint16_t rpm_limit_value;
+#ifdef USE_BOOST_MODE
+    uint16_t rpm_limit_boost;
+    uint8_t rpm_limit_boost_duration;
+    uint8_t rpm_limit_boost_count;
+    bool rpm_limit_boost_hold;
+    bool rpm_limit_boost_reset;
+    uint8_t rpm_limit_boost_delay;
+    bool rpm_limit_boost_delay_reset;
+    bool rpm_limit_boost_count_reset;
+    bool rpm_limit_boost_led;
+    uint8_t rpm_limit_boost_led_hz;
+#endif
 #endif
 } mixerConfig_t;
 
@@ -111,7 +123,9 @@ PG_DECLARE(mixerConfig_t, mixerConfig);
 
 #define CHANNEL_FORWARDING_DISABLED (uint8_t)0xFF
 
-#ifdef USE_RPM_LIMIT
+#ifdef USE_BOOST_MODE_SPEC
+#define RPM_LIMIT_ACTIVE true
+#elif defined(USE_RPM_LIMIT)
 #define RPM_LIMIT_ACTIVE mixerConfig()->rpm_limit
 #else
 #define RPM_LIMIT_ACTIVE false

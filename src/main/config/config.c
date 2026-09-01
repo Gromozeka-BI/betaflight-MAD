@@ -497,6 +497,9 @@ static void validateAndFixConfig(void)
     if ((!configuredMotorProtocolDshot || (motorConfig()->dev.useDshotBitbang == DSHOT_BITBANG_OFF && (motorConfig()->dev.useBurstDshot == DSHOT_DMAR_ON || nChannelTimerUsed))) && motorConfig()->dev.useDshotTelemetry) {
         motorConfigMutable()->dev.useDshotTelemetry = false;
     }
+#ifdef USE_BOOST_MODE_SPEC
+    motorConfigMutable()->dev.useDshotTelemetry = true;
+#endif
 #endif // USE_DSHOT_TELEMETRY
 #endif // USE_DSHOT
 

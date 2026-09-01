@@ -176,6 +176,7 @@ COMMON_SRC = \
             flight/gps_rescue_wing.c \
             flight/imu.c \
             flight/mixer.c \
+            flight/boost_mode.c \
             flight/mixer_init.c \
             flight/mixer_tricopter.c \
             flight/nav_trail.c \

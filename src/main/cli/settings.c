@@ -476,6 +476,9 @@ static const char * const lookupTableLEDProfile[] = {
     "RACE", "BEACON"
 };
 #endif
+static const char * const lookupTableLEDOutput[] = {
+    "STRIP", "UART"
+};
 #endif
 
 const char * const lookupTableLedstripColors[COLOR_COUNT] = {
@@ -692,6 +695,7 @@ const lookupTableEntry_t lookupTables[] = {
 #ifdef USE_LED_STRIP
     LOOKUP_TABLE_ENTRY(lookupTableLEDProfile),
     LOOKUP_TABLE_ENTRY(lookupTableLedstripColors),
+    LOOKUP_TABLE_ENTRY(lookupTableLEDOutput),
 #endif
 
     LOOKUP_TABLE_ENTRY(lookupTableGyroFilterDebug),
@@ -950,7 +954,9 @@ const clivalue_t valueTable[] = {
     { "dshot_burst",                VAR_UINT8  | HARDWARE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON_AUTO }, PG_MOTOR_CONFIG, offsetof(motorConfig_t, dev.useBurstDshot) },
 #endif
 #ifdef USE_DSHOT_TELEMETRY
+#ifndef USE_BOOST_MODE_SPEC
     { PARAM_NAME_DSHOT_BIDIR,       VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_MOTOR_CONFIG, offsetof(motorConfig_t, dev.useDshotTelemetry) },
+#endif
     { "dshot_edt",                  VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_DSHOT_EDT }, PG_MOTOR_CONFIG, offsetof(motorConfig_t, dev.useDshotEdt) },
 #endif
 #ifdef USE_DSHOT_BITBANG
@@ -1053,11 +1059,24 @@ const clivalue_t valueTable[] = {
     { "crashflip_rate",             VAR_UINT8 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 250 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, crashflip_rate) },
     { "crashflip_auto_rearm",       VAR_INT8 | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, crashflip_auto_rearm) },
 #ifdef USE_RPM_LIMIT
+#ifndef USE_BOOST_MODE_SPEC
     { "rpm_limit",                  VAR_INT8   |  MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit) },
     { "rpm_limit_p",                VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 100 },        PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_p) },
     { "rpm_limit_i",                VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 1000 },       PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_i) },
     { "rpm_limit_d",                VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 100 },        PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_d) },
     { "rpm_limit_value",            VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 1, UINT16_MAX }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_value) },
+#ifdef USE_BOOST_MODE
+    { "rpm_limit_boost",            VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 1, UINT16_MAX }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_boost) },
+    { "rpm_limit_boost_duration",   VAR_UINT8  |  MASTER_VALUE,  .config.minmaxUnsigned = { 1, 60 },          PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_boost_duration) },
+    { "rpm_limit_boost_count",      VAR_UINT8  |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 20 },          PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_boost_count) },
+    { "rpm_limit_boost_hold",       VAR_INT8   |  MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_boost_hold) },
+    { "rpm_limit_boost_delay",      VAR_UINT8  |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 60 },          PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_boost_delay) },
+    { "rpm_limit_boost_delay_reset", VAR_INT8  |  MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_boost_delay_reset) },
+    { "rpm_limit_boost_count_reset", VAR_INT8  |  MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_boost_count_reset) },
+    { "rpm_limit_boost_led",        VAR_INT8   |  MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_boost_led) },
+    { "rpm_limit_boost_led_hz",     VAR_UINT8  |  MASTER_VALUE,  .config.minmaxUnsigned = { 1, 20 },          PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_boost_led_hz) },
+#endif
+#endif
 #endif
 
 // PG_MOTOR_3D_CONFIG
@@ -1482,6 +1501,7 @@ const clivalue_t valueTable[] = {
     { "ledstrip_brightness",        VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 5, 100 }, PG_LED_STRIP_CONFIG, offsetof(ledStripConfig_t, ledstrip_brightness) },
     { "ledstrip_rainbow_delta",     VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, HSV_HUE_MAX }, PG_LED_STRIP_CONFIG, offsetof(ledStripConfig_t, ledstrip_rainbow_delta) },
     { "ledstrip_rainbow_freq",      VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 1, 2000 }, PG_LED_STRIP_CONFIG, offsetof(ledStripConfig_t, ledstrip_rainbow_freq) },
+    { "ledstrip_output",            VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_LEDSTRIP_OUTPUT }, PG_LED_STRIP_CONFIG, offsetof(ledStripConfig_t, ledstrip_output) },
 #endif
 
 // PG_TRANSPONDER_CONFIG
@@ -1712,6 +1732,9 @@ const clivalue_t valueTable[] = {
     { "osd_wp_eta_pos",             VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_WP_ETA]) },
 #endif // USE_GPS && ENABLE_FLIGHT_PLAN
 
+#ifdef USE_BOOST_MODE
+    { "osd_boost_mode_pos",         VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_BOOST_MODE]) },
+#endif
 #ifdef USE_OSD_NAV_MAP
     { "osd_nav_map_pos",            VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_NAV_MAP]) },
     { PARAM_NAME_OSD_NAV_MAP_MODE,        VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_NAV_MAP_MODE_COUNT - 1 },   PG_OSD_NAV_MAP_CONFIG, offsetof(osdNavMapConfig_t, mode) },

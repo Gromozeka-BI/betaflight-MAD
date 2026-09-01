@@ -33,6 +33,7 @@
 
 #include "common/axis.h"
 #include "common/color.h"
+#include "common/colorconversion.h"
 #include "common/maths.h"
 #include "common/printf.h"
 #include "common/typeconversion.h"
@@ -43,9 +44,11 @@
 #include "pg/pg_ids.h"
 #include "pg/rx.h"
 
+#include "drivers/io.h"
 #include "drivers/light_ws2811strip.h"
 #include "drivers/serial.h"
 #include "drivers/time.h"
+#include "drivers/timer.h"
 #include "drivers/vtx_common.h"
 
 #include "config/config.h"
@@ -54,6 +57,7 @@
 #include "fc/rc_modes.h"
 #include "fc/runtime_config.h"
 
+#include "flight/boost_mode.h"
 #include "flight/failsafe.h"
 #include "flight/gps_rescue.h"
 #include "flight/imu.h"
@@ -178,7 +182,7 @@ static hsvColor_t getHsvFromVtxFrequency(uint16_t freq)
 #endif
 
 
-PG_REGISTER_WITH_RESET_FN(ledStripConfig_t, ledStripConfig, PG_LED_STRIP_CONFIG, 3);
+PG_REGISTER_WITH_RESET_FN(ledStripConfig_t, ledStripConfig, PG_LED_STRIP_CONFIG, 4);
 
 // Default LED strip brightness (percent). A target may lower this, e.g. when a
 // single bright addressable LED is used as a status indicator.
@@ -203,6 +207,7 @@ void pgResetFn_ledStripConfig(ledStripConfig_t *ledStripConfig)
     ledStripConfig->ledstrip_brightness = LED_STRIP_DEFAULT_BRIGHTNESS;
     ledStripConfig->ledstrip_rainbow_delta = 0;
     ledStripConfig->ledstrip_rainbow_freq = 120;
+    ledStripConfig->ledstrip_output = LED_OUTPUT_STRIP;
 #ifndef UNIT_TEST
 #ifdef LED_STRIP_PIN
     ledStripConfig->ioTag = IO_TAG(LED_STRIP_PIN);
@@ -1399,6 +1404,237 @@ void ledStripDisable(void)
     }
 }
 
+#define LED_UART_BAUD 9600
+#define LED_UART_BIT_US (1000000 / LED_UART_BAUD)
+#define LED_UART_FRAME_HZ 20
+// SoftwareSerial on Nano drops back-to-back bytes; keep ~2 ms idle between them.
+#define LED_UART_GAP_BITS 20
+
+static IO_t ledUartIO = IO_NONE;
+static char ledUartBuf[40];
+static volatile uint8_t ledUartLen;
+static volatile uint8_t ledUartPos;
+static volatile uint8_t ledUartBitsLeft;
+static volatile uint8_t ledUartIdleLeft;
+static volatile uint16_t ledUartShift;
+static volatile uint8_t ledUartSending;
+#ifdef USE_TIMER
+static const timerHardware_t *ledUartTimer = NULL;
+static timerOvrHandlerRec_t ledUartOverCb;
+#endif
+
+static hsvColor_t ledUartCurrentHsv(uint8_t *colorId)
+{
+    uint8_t id = ledStripConfig()->ledstrip_race_color;
+    hsvColor_t currentHsv = hsv[COLOR_BLACK];
+
+    switch (ledStripConfig()->ledstrip_profile) {
+    case LED_PROFILE_BEACON:
+        id = ledStripConfig()->ledstrip_beacon_color;
+        if (id < COLOR_COUNT) {
+            currentHsv = hsv[id];
+        }
+        break;
+#ifdef USE_LED_STRIP_STATUS_MODE
+    case LED_PROFILE_STATUS:
+        id = ledGetColor(&ledStripStatusModeConfig()->ledConfigs[0]);
+        if (id < LED_CONFIGURABLE_COLOR_COUNT) {
+            currentHsv = ledStripStatusModeConfig()->colors[id];
+        }
+        break;
+#endif
+    case LED_PROFILE_RACE:
+    default:
+        if (id == COLOR_BLACK) {
+#ifdef USE_VTX_COMMON
+            const vtxDevice_t *vtxDevice = vtxCommonDevice();
+            if (vtxDevice) {
+                uint8_t const band = vtxSettingsConfig()->band;
+                uint8_t const channel = vtxSettingsConfig()->channel;
+                uint16_t vtxFrequency = VTX_SETTINGS_MIN_FREQUENCY_MHZ;
+
+                if (band && channel) {
+                    vtxFrequency = vtxCommonLookupFrequency(vtxDevice, band, channel);
+                } else {
+                    vtxFrequency = vtxSettingsConfig()->freq;
+                }
+                currentHsv = getHsvFromVtxFrequency(vtxFrequency);
+            }
+#endif
+        } else {
+#ifdef USE_LED_STRIP_STATUS_MODE
+            if (id < LED_CONFIGURABLE_COLOR_COUNT) {
+                currentHsv = ledStripStatusModeConfig()->colors[id];
+            }
+#else
+            if (id < COLOR_COUNT) {
+                currentHsv = hsv[id];
+            }
+#endif
+        }
+        break;
+    }
+
+    if (colorId) {
+        *colorId = id;
+    }
+    return currentHsv;
+}
+
+static void ledUartShiftBit(void)
+{
+    if (!ledUartSending) {
+        return;
+    }
+
+    if (ledUartIdleLeft) {
+        IOHi(ledUartIO);
+        ledUartIdleLeft--;
+        return;
+    }
+
+    if (ledUartBitsLeft == 0) {
+        if (ledUartPos >= ledUartLen) {
+            IOHi(ledUartIO);
+            ledUartSending = 0;
+            return;
+        }
+
+        const uint8_t byte = (uint8_t)ledUartBuf[ledUartPos++];
+        // 8N1 LSB-first: start (0), data[0:7], stop (1)
+        ledUartShift = (1u << 9) | ((uint16_t)byte << 1);
+        ledUartBitsLeft = 10;
+    }
+
+    if (ledUartShift & 1) {
+        IOHi(ledUartIO);
+    } else {
+        IOLo(ledUartIO);
+    }
+    ledUartShift >>= 1;
+    ledUartBitsLeft--;
+
+    if (ledUartBitsLeft == 0 && ledUartPos < ledUartLen) {
+        ledUartIdleLeft = LED_UART_GAP_BITS;
+    }
+}
+
+#ifdef USE_TIMER
+static void ledUartOnOverflow(timerOvrHandlerRec_t *cbRec, captureCompare_t capture)
+{
+    UNUSED(cbRec);
+    UNUSED(capture);
+    ledUartShiftBit();
+}
+#endif
+
+static void ledUartBuildFrame(void)
+{
+    const unsigned armed = ARMING_FLAG(ARMED) ? 1 : 0;
+#ifdef USE_BOOST_MODE
+    const unsigned boost = isBoostActive() ? 1 : 0;
+    const unsigned remain = getBoostRemaining();
+    const unsigned pct = constrain((int)getBoostPercent(), 0, 100);
+#else
+    const unsigned boost = 0;
+    const unsigned remain = 0;
+    const unsigned pct = 0;
+#endif
+    const unsigned bright = ledStripConfig()->ledstrip_brightness;
+    uint8_t colorId = 0;
+    const hsvColor_t hsvNow = ledUartCurrentHsv(&colorId);
+    const rgbColor24bpp_t *rgb = hsvToRgb24(&hsvNow);
+
+    ledUartLen = tfp_sprintf(ledUartBuf, "L,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
+        armed, boost, remain, pct, bright,
+        colorId, rgb->rgb.r, rgb->rgb.g, rgb->rgb.b);
+}
+
+static void ledUartQueueFrame(void)
+{
+    ledUartPos = 0;
+    ledUartBitsLeft = 0;
+    ledUartIdleLeft = 0;
+    ledUartSending = 1;
+}
+
+static void ledUartInit(void)
+{
+    const ioTag_t tag = ledStripConfig()->ioTag;
+    if (!tag) {
+        return;
+    }
+
+    ledUartIO = IOGetByTag(tag);
+    IOInit(ledUartIO, OWNER_LED_STRIP, 0);
+    IOConfigGPIO(ledUartIO, IOCFG_OUT_PP);
+    IOHi(ledUartIO);
+    ledUartLen = 0;
+    ledUartPos = 0;
+    ledUartBitsLeft = 0;
+    ledUartIdleLeft = 0;
+    ledUartSending = 0;
+
+#ifdef USE_TIMER
+    ledUartTimer = timerAllocate(tag, OWNER_LED_STRIP, 0);
+    if (ledUartTimer) {
+        uint32_t clock = timerClock(ledUartTimer);
+        uint32_t period = clock / LED_UART_BAUD;
+        while (period > 0xFFFF && clock > 1) {
+            clock /= 2;
+            period = clock / LED_UART_BAUD;
+        }
+        timerConfigure(ledUartTimer, (uint16_t)period, clock);
+        timerChannelOverflowHandlerInit(&ledUartOverCb, ledUartOnOverflow);
+        timerChannelConfigCallbacks(ledUartTimer, NULL, &ledUartOverCb);
+    }
+#endif
+}
+
+static void ledUartUpdate(timeUs_t currentTimeUs)
+{
+    static timeUs_t nextFrameUs = 0;
+
+    if (ledUartIO == IO_NONE) {
+        return;
+    }
+
+    schedulerIgnoreTaskExecRate();
+
+#ifdef USE_TIMER
+    if (ledUartTimer) {
+        if (!ledUartSending && cmpTimeUs(currentTimeUs, nextFrameUs) >= 0) {
+            ledUartBuildFrame();
+            ledUartQueueFrame();
+            nextFrameUs = currentTimeUs + (1000000 / LED_UART_FRAME_HZ);
+        }
+        rescheduleTask(TASK_SELF, TASK_PERIOD_HZ(LED_UART_FRAME_HZ));
+        return;
+    }
+#endif
+
+    if (ledUartSending) {
+        ledUartShiftBit();
+        if (ledUartSending) {
+            rescheduleTask(TASK_SELF, TASK_PERIOD_US(LED_UART_BIT_US));
+        } else {
+            rescheduleTask(TASK_SELF, TASK_PERIOD_HZ(LED_UART_FRAME_HZ));
+        }
+        return;
+    }
+
+    if (cmpTimeUs(currentTimeUs, nextFrameUs) < 0) {
+        rescheduleTask(TASK_SELF, TASK_PERIOD_HZ(LED_UART_FRAME_HZ));
+        return;
+    }
+
+    ledUartBuildFrame();
+    ledUartQueueFrame();
+    nextFrameUs = currentTimeUs + (1000000 / LED_UART_FRAME_HZ);
+    ledUartShiftBit();
+    rescheduleTask(TASK_SELF, ledUartSending ? TASK_PERIOD_US(LED_UART_BIT_US) : TASK_PERIOD_HZ(LED_UART_FRAME_HZ));
+}
+
 void ledStripInit(void)
 {
 #if defined(USE_LED_STRIP_STATUS_MODE)
@@ -1409,7 +1645,11 @@ void ledStripInit(void)
     reevaluateLedConfig();
 #endif
 
-    ws2811LedStripInit(ledStripConfig()->ioTag, (ledStripFormatRGB_e)ledStripConfig()->ledstrip_grb_rgb);
+    if (ledStripConfig()->ledstrip_output == LED_OUTPUT_UART) {
+        ledUartInit();
+    } else {
+        ws2811LedStripInit(ledStripConfig()->ioTag, (ledStripFormatRGB_e)ledStripConfig()->ledstrip_grb_rgb);
+    }
 }
 
 
@@ -1525,6 +1765,11 @@ void ledStripUpdate(timeUs_t currentTimeUs) {
     static timeUs_t updateStartTimeUs = 0;
     bool ledCurrentState = applyProfile;
 
+    if (ledStripConfig()->ledstrip_output == LED_OUTPUT_UART) {
+        ledUartUpdate(currentTimeUs);
+        return;
+    }
+
     if (updateStartTimeUs != 0) {
         // The LED task rate is considered to be the rate at which updates are sent to the LEDs as a consequence
         // of the layer timers firing
@@ -1568,6 +1813,30 @@ void ledStripUpdate(timeUs_t currentTimeUs) {
                     break;
             }
 
+#ifdef USE_BOOST_MODE
+            // Keep the current LED pattern; only force a DMA pass when the
+            // boost blink edge changes so the strip can go black / restore.
+            {
+                static bool boostLedRestorePending = false;
+                static bool boostLedLastBlank = false;
+
+                if (boostModeLedEnabled()) {
+                    const bool blank = boostModeLedShouldBlank();
+                    if (blank != boostLedLastBlank && ledProfileSequence == LED_PROFILE_SLOW) {
+                        ledProfileSequence = LED_PROFILE_ADVANCE;
+                    }
+                    boostLedLastBlank = blank;
+                    boostLedRestorePending = true;
+                } else if (boostLedRestorePending) {
+                    if (ledProfileSequence == LED_PROFILE_SLOW) {
+                        ledProfileSequence = LED_PROFILE_ADVANCE;
+                    }
+                    boostLedLastBlank = false;
+                    boostLedRestorePending = false;
+                }
+            }
+#endif
+
             if (ledProfileSequence == LED_PROFILE_SLOW) {
                 // No timer was ready so no work was done
                 schedulerIgnoreTaskExecTime();
@@ -1592,7 +1861,12 @@ void ledStripUpdate(timeUs_t currentTimeUs) {
         } else {
             static bool multipassUpdate = false;
             // Profile is applied, so now update the LEDs
+#ifdef USE_BOOST_MODE
+            const uint8_t brightness = boostModeLedShouldBlank() ? 0 : ledStripConfig()->ledstrip_brightness;
+            if (ws2811UpdateStrip(brightness)) {
+#else
             if (ws2811UpdateStrip(ledStripConfig()->ledstrip_brightness)) {
+#endif
                 // Final pass updating the DMA buffer is always short
                 if (multipassUpdate) {
                     schedulerIgnoreTaskExecTime();

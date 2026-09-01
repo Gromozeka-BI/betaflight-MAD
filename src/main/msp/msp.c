@@ -3058,7 +3058,12 @@ RAM_CODE static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t
         if (sbufBytesRemaining(src) >= 2) {
             motorConfigMutable()->motorPoleCount = sbufReadU8(src);
 #if defined(USE_DSHOT_TELEMETRY)
+#ifdef USE_BOOST_MODE_SPEC
+            sbufReadU8(src);
+            motorConfigMutable()->dev.useDshotTelemetry = true;
+#else
             motorConfigMutable()->dev.useDshotTelemetry = sbufReadU8(src);
+#endif
 #else
             sbufReadU8(src);
 #endif

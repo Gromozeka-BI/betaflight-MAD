@@ -270,6 +270,9 @@
 
 #ifdef USE_DSHOT_TELEMETRY
 #define USE_RPM_LIMIT
+#define USE_BOOST_MODE
+// Uncomment for the locked competition firmware.
+// #define USE_BOOST_MODE_SPEC
 #endif
 
 #ifdef USE_OSD
@@ -346,7 +349,7 @@
 
 #define PID_PROFILE_COUNT 4
 #ifndef CONTROL_RATE_PROFILE_COUNT
-#define CONTROL_RATE_PROFILE_COUNT 4 // or maybe 6
+#define CONTROL_RATE_PROFILE_COUNT 6
 #endif
 #define BATTERY_PROFILE_COUNT 3
 
@@ -500,6 +503,9 @@
 #ifdef USE_DSHOT_TELEMETRY
 #ifndef USE_RPM_LIMIT
 #define USE_RPM_LIMIT
+#endif
+#ifndef USE_BOOST_MODE
+#define USE_BOOST_MODE
 #endif
 #endif
 

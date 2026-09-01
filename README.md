@@ -1,6 +1,23 @@
 ![Betaflight](https://raw.githubusercontent.com/betaflight/.github/main/profile/images/bf_logo.svg#gh-light-mode-only)
 ![Betaflight](https://raw.githubusercontent.com/betaflight/.github/main/profile/images/bf_logo_dark.svg#gh-dark-mode-only)
 
+# Betaflight-MAD
+
+Форк официального **Betaflight 2026.6.1**. Добавлен режим Boost и соревновательная сборка SPEC с фиксированными пределами оборотов.
+
+| Документ | Содержание |
+|---|---|
+| [`PILOT_SPEC.md`](PILOT_SPEC.md) | Регламент пилота: выбор hex, перенос конфигурации, полёт |
+| [`BOOST_MODE.md`](BOOST_MODE.md) | Описание режима Boost и параметры сборок |
+| [`LEDSTRIP_UART.md`](LEDSTRIP_UART.md) | Протокол вывода состояния ленты на Arduino |
+| `dist/spec/` | Готовые hex-файлы ядер микроконтроллеров SPEC |
+
+Сборка ядер SPEC: `bash scripts/build_spec_mcu.sh`.
+
+Ниже приведена исходная документация проекта Betaflight.
+
+---
+
 [![Latest version](https://img.shields.io/github/v/release/betaflight/betaflight)](https://github.com/betaflight/betaflight/releases) [![Build](https://img.shields.io/github/actions/workflow/status/betaflight/betaflight/push.yml?branch=master)](https://github.com/betaflight/betaflight/actions/workflows/push.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Join us on Discord!](https://img.shields.io/discord/868013470023548938)](https://discord.gg/n4E6ak4u3c)
 
 Betaflight is flight controller software (firmware) used to fly multi-rotor craft and fixed wing craft. Betaflight focuses on flight performance, leading-edge feature additions, and wide target support.

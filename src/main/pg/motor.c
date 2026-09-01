@@ -92,7 +92,11 @@ void pgResetFn_motorConfig(motorConfig_t *motorConfig)
 
     motorConfig->maxthrottle = 2000;
     motorConfig->mincommand = 1000;
+#ifdef USE_BOOST_MODE_SPEC
+    motorConfig->kv = 1300;
+#else
     motorConfig->kv = 1960;
+#endif
 
 #ifdef MOTOR1_PIN
     motorConfig->dev.ioTags[0] = IO_TAG(MOTOR1_PIN);
@@ -130,7 +134,11 @@ void pgResetFn_motorConfig(motorConfig_t *motorConfig)
 #endif
 
 #ifdef USE_DSHOT_TELEMETRY
+#ifdef USE_BOOST_MODE_SPEC
+    motorConfig->dev.useDshotTelemetry = DSHOT_TELEMETRY_ON;
+#else
     motorConfig->dev.useDshotTelemetry = DEFAULT_DSHOT_TELEMETRY;
+#endif
     motorConfig->dev.useDshotEdt = DEFAULT_DSHOT_EDT;
 #endif
 

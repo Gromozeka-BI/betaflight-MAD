@@ -157,6 +157,7 @@
 #include "flight/flight_plan_nav.h"
 #include "flight/gps_rescue.h"
 #include "flight/position.h"
+#include "flight/boost_mode.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
@@ -1979,6 +1980,64 @@ static void osdElementAuxValue(osdElementParms_t *element)
     tfp_sprintf(element->buff, "%c%d", osdConfig()->aux_symbol, osdAuxValue);
 }
 
+#ifdef USE_BOOST_MODE
+#define BOOST_BAR_STEPS 11 // odd length so remaining-count sits in the centre
+
+static void osdElementBoostMode(osdElementParms_t *element)
+{
+    const bool active = isBoostActive();
+    uint8_t filled = 0;
+
+    if (active) {
+        const float percent = constrainf(getBoostPercent(), 0.0f, 100.0f);
+        filled = (uint8_t)ceilf(percent * BOOST_BAR_STEPS / 100.0f);
+        element->attr = DISPLAYPORT_SEVERITY_INFO;
+    }
+
+    element->buff[0] = SYM_PB_START;
+    for (int i = 1; i <= BOOST_BAR_STEPS; i++) {
+        element->buff[i] = (i <= filled) ? SYM_PB_FULL : SYM_PB_EMPTY;
+    }
+    element->buff[BOOST_BAR_STEPS + 1] = SYM_PB_CLOSE;
+    if (filled > 0 && filled < BOOST_BAR_STEPS) {
+        element->buff[1 + filled] = SYM_PB_END;
+    }
+    element->buff[BOOST_BAR_STEPS + 2] = '\0';
+
+    if (!active) {
+        const int center = 1 + (BOOST_BAR_STEPS / 2);
+
+        if (isBoostUnlocked()) {
+            const uint8_t remaining = getBoostRemaining();
+
+            if (remaining >= 10) {
+                element->buff[center - 3] = '*';
+                element->buff[center - 2] = '*';
+                element->buff[center - 1] = '0' + (remaining / 10);
+                element->buff[center]     = '0' + (remaining % 10);
+                element->buff[center + 1] = '*';
+                element->buff[center + 2] = '*';
+            } else {
+                element->buff[center - 2] = '*';
+                element->buff[center - 1] = '*';
+                element->buff[center]     = '0' + remaining;
+                element->buff[center + 1] = '*';
+                element->buff[center + 2] = '*';
+            }
+        } else {
+            const uint8_t secondsLeft = getBoostUnlockSecondsLeft();
+
+            if (secondsLeft >= 10) {
+                element->buff[center - 1] = '0' + (secondsLeft / 10);
+                element->buff[center] = '0' + (secondsLeft % 10);
+            } else {
+                element->buff[center] = '0' + secondsLeft;
+            }
+        }
+    }
+}
+#endif
+
 static void osdElementWarnings(osdElementParms_t *element)
 {
     bool elementBlinking = false;
@@ -2127,6 +2186,9 @@ static const uint8_t osdElementDisplayOrder[] = {
     OSD_TOTAL_FLIGHTS,
 #endif
     OSD_AUX_VALUE,
+#ifdef USE_BOOST_MODE
+    OSD_BOOST_MODE,
+#endif
 #ifdef USE_OSD_HD
     OSD_SYS_GOGGLE_VOLTAGE,
     OSD_SYS_VTX_VOLTAGE,
@@ -2294,6 +2356,9 @@ const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
     [OSD_TOTAL_FLIGHTS]           = osdElementTotalFlights,
 #endif
     [OSD_AUX_VALUE]               = osdElementAuxValue,
+#ifdef USE_BOOST_MODE
+    [OSD_BOOST_MODE]              = osdElementBoostMode,
+#endif
 #ifdef USE_MSP_DISPLAYPORT
     [OSD_SYS_GOGGLE_VOLTAGE]      = osdElementSys,
     [OSD_SYS_VTX_VOLTAGE]         = osdElementSys,
@@ -2590,6 +2655,11 @@ bool osdDrawSpec(displayPort_t *osdDisplayPort)
         currentRow = midRow - 3;
 #ifdef USE_RPM_LIMIT
         {
+#ifdef USE_BOOST_MODE_SPEC
+            len = tfp_sprintf(buff, "%s", "24 HOURS SPEC");
+            displayWrite(osdDisplayPort, midCol - (len / 2), currentRow++, DISPLAYPORT_SEVERITY_NORMAL, buff);
+            specState = POLES;
+#else
             const bool rpmLimitActive = mixerConfig()->rpm_limit > 0 && isMotorProtocolBidirDshot();
             if (rpmLimitActive) {
                 len = tfp_sprintf(buff, "RPM LIMIT ON  %d", mixerConfig()->rpm_limit_value);
@@ -2603,6 +2673,7 @@ bool osdDrawSpec(displayPort_t *osdDisplayPort)
             } else {
                 specState = THR;
             }
+#endif
         }
         break;
 
@@ -2610,7 +2681,11 @@ bool osdDrawSpec(displayPort_t *osdDisplayPort)
         len = tfp_sprintf(buff, "KV %d   POLES %d", motorConfig()->kv, motorConfig()->motorPoleCount);
         displayWrite(osdDisplayPort, midCol - (len / 2), currentRow++, DISPLAYPORT_SEVERITY_NORMAL, buff);
 
+#ifdef USE_BOOST_MODE_SPEC
+        specState = THR;
+#else
         specState = MIXER;
+#endif
         break;
 
     case MIXER:

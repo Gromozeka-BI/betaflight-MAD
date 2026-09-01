@@ -1,0 +1,285 @@
+
+# version
+# Betaflight-BOOST-SPEC / STM32F722 (F722) 2026.6.1 Sep  1 2026 / 08:50:05 (norevision) MSP API: 1.48
+
+# start the command batch
+batch start
+
+# reset configuration to default settings
+defaults nosave
+
+board_name TMOTORF7
+manufacturer_id TMTR
+mcu_id 001e00243232511930383830
+signature 
+
+# resources
+resource BEEPER 1 C13
+resource MOTOR 1 C06
+resource MOTOR 2 C07
+resource MOTOR 3 B00
+resource MOTOR 4 B01
+resource MOTOR 5 B06
+resource MOTOR 6 B08
+resource MOTOR 7 B07
+resource MOTOR 8 C09
+resource LED_STRIP 1 A08
+resource SERIAL_TX 1 A09
+resource SERIAL_TX 2 A02
+resource SERIAL_TX 3 C10
+resource SERIAL_TX 4 A00
+resource SERIAL_TX 5 C12
+resource SERIAL_RX 1 A10
+resource SERIAL_RX 2 A03
+resource SERIAL_RX 3 C11
+resource SERIAL_RX 4 A01
+resource SERIAL_RX 5 D02
+resource I2C_SCL 2 B10
+resource I2C_SDA 2 B11
+resource LED 1 B02
+resource SPI_SCK 1 A05
+resource SPI_SCK 2 B13
+resource SPI_SCK 3 B03
+resource SPI_SDI 1 A06
+resource SPI_SDI 2 B14
+resource SPI_SDI 3 B04
+resource SPI_SDO 1 A07
+resource SPI_SDO 2 B15
+resource SPI_SDO 3 B05
+resource ADC_BATT 1 C01
+resource ADC_RSSI 1 C03
+resource ADC_CURR 1 C02
+resource BARO_CS 1 C15
+resource PINIO 1 C14
+resource PINIO 2 B09
+resource FLASH_CS 1 C08
+resource GYRO_EXTI 1 C04
+resource GYRO_CS 1 A04
+
+# timer
+timer C06 AF2
+# pin C06: TIM3 CH1 (AF2)
+timer C07 AF2
+# pin C07: TIM3 CH2 (AF2)
+timer B00 AF2
+# pin B00: TIM3 CH3 (AF2)
+timer B01 AF2
+# pin B01: TIM3 CH4 (AF2)
+timer B06 AF2
+# pin B06: TIM4 CH1 (AF2)
+timer B08 AF2
+# pin B08: TIM4 CH3 (AF2)
+timer A15 AF1
+# pin A15: TIM2 CH1 (AF1)
+timer B09 AF3
+# pin B09: TIM11 CH1 (AF3)
+timer A08 AF1
+# pin A08: TIM1 CH1 (AF1)
+timer B07 AF2
+# pin B07: TIM4 CH2 (AF2)
+timer C09 AF3
+# pin C09: TIM8 CH4 (AF3)
+
+# dma
+dma ADC 1 1
+# ADC 1: DMA2 Stream 4 Channel 0
+dma pin C06 0
+# pin C06: DMA1 Stream 4 Channel 5
+dma pin C07 0
+# pin C07: DMA1 Stream 5 Channel 5
+dma pin B00 0
+# pin B00: DMA1 Stream 7 Channel 5
+dma pin B01 0
+# pin B01: DMA1 Stream 2 Channel 5
+dma pin B06 0
+# pin B06: DMA1 Stream 0 Channel 2
+dma pin B08 0
+# pin B08: DMA1 Stream 7 Channel 2
+dma pin A15 0
+# pin A15: DMA1 Stream 5 Channel 3
+dma pin A08 0
+# pin A08: DMA2 Stream 6 Channel 0
+dma pin B07 0
+# pin B07: DMA1 Stream 3 Channel 2
+dma pin C09 0
+# pin C09: DMA2 Stream 7 Channel 7
+
+# feature
+feature GPS
+feature TELEMETRY
+feature LED_STRIP
+feature OSD
+feature ESC_SENSOR
+
+# serial
+serial UART1 64 115200 57600 0 115200
+serial UART2 2 115200 57600 0 115200
+serial UART3 512 115200 57600 460800 115200
+serial UART4 1024 115200 57600 0 115200
+serial UART5 131073 115200 57600 0 115200
+
+# led
+led 0 0,0::C:2
+led 1 1,0::C:1
+led 2 2,0::C:1
+led 3 3,0::C:1
+
+# aux
+aux 0 0 0 1700 2050 1 0
+aux 1 0 2 900 1300 1 0
+aux 2 35 1 1825 2050 1 0
+aux 3 35 2 900 1225 1 0
+aux 4 40 2 900 1300 0 0
+aux 5 41 2 900 1300 0 0
+aux 6 51 2 1675 2100 0 0
+aux 7 51 2 1275 1675 0 0
+aux 8 58 4 1700 2100 0 0
+
+# adjrange
+adjrange 0 0 3 900 1100 12 3 0 0
+adjrange 1 0 3 1400 1625 12 3 0 0
+adjrange 2 0 3 1875 2100 12 3 0 0
+
+# vtxtable
+vtxtable bands 6
+vtxtable channels 8
+vtxtable band 1 BOSCAM_A A CUSTOM     0    0    0    0    0    0    0    0
+vtxtable band 2 BOSCAM_B B CUSTOM     0    0    0    0    0    0    0    0
+vtxtable band 3 BOSCAM_E E CUSTOM  5705    0    0    0    0    0    0    0
+vtxtable band 4 FATSHARK F CUSTOM  5740 5760    0 5800    0    0    0    0
+vtxtable band 5 RACEBAND R CUSTOM  5658 5695 5732 5769 5806 5843 5880 5917
+vtxtable band 6 LOWBAND  L CUSTOM     0    0    0    0    0    0    0    0
+vtxtable powerlevels 3
+vtxtable powervalues 14 23 0
+vtxtable powerlabels 25 200 0
+
+# vtx
+vtx 0 2 0 0 1 900 1300
+vtx 1 2 0 0 3 1300 1700
+vtx 2 2 0 0 3 1700 2050
+vtx 4 2 0 0 3 2050 2100
+
+# rxfail
+rxfail 6 s 2075
+
+# master
+set baro_spi_device = 3
+set blackbox_device = SPIFLASH
+set motor_pwm_protocol = DSHOT300
+set current_meter = ADC
+set battery_meter = ADC
+set beeper_inversion = ON
+set beeper_od = OFF
+set yaw_motors_reversed = ON
+set pid_process_denom = 2
+set ledstrip_output = UART
+set osd_warn_bitmask = 270335
+set osd_vbat_pos = 2518
+set osd_tim_2_pos = 2085
+set osd_flymode_pos = 3112
+set osd_throttle_pos = 3496
+set osd_vtx_channel_pos = 1478
+set osd_current_pos = 3461
+set osd_mah_drawn_pos = 3431
+set osd_wh_drawn_pos = 1321
+set osd_craft_name_pos = 5
+set osd_pilot_name_pos = 2501
+set osd_debug_pos = 101
+set osd_power_pos = 3399
+set osd_warnings_pos = 14836
+set osd_battery_usage_pos = 531
+set osd_esc_tmp_pos = 1256
+set osd_esc_rpm_pos = 229
+set osd_esc_rpm_freq_pos = 69
+set osd_rate_profile_name_pos = 2437
+set osd_rcchannels_pos = 2148
+set osd_total_flights_pos = 1096
+set osd_rcchannels = 8,9,-1,-1
+set osd_menu_background = BLACK
+set osd_boost_mode_pos = 2611
+set vtx_band = 5
+set vtx_channel = 1
+set vtx_power = 3
+set vtx_freq = 5658
+set displayport_msp_fonts = 0,0,0,0
+set pinio_box = 40,41,255,255
+set flash_spi_bus = 3
+set gyro_1_bustype = SPI
+set gyro_1_spibus = 1
+set pilot_name = MAD 1
+set box_user_1_name = VTX Switch
+set box_user_2_name = Telemetry Switch
+
+profile 0
+
+profile 1
+
+profile 2
+
+profile 3
+
+# restore original profile selection
+profile 0
+
+rateprofile 0
+
+# rateprofile 0
+set rateprofile_name = SHTR
+set rates_type = BETAFLIGHT
+set roll_rc_rate = 90
+set pitch_rc_rate = 85
+set yaw_rc_rate = 80
+set roll_srate = 63
+set pitch_srate = 63
+set yaw_srate = 63
+
+rateprofile 1
+
+# rateprofile 1
+set rateprofile_name = Grom
+set rates_type = BETAFLIGHT
+set roll_rc_rate = 50
+set pitch_rc_rate = 50
+set yaw_rc_rate = 50
+set roll_srate = 69
+set pitch_srate = 69
+set yaw_srate = 69
+
+rateprofile 2
+
+# rateprofile 2
+set rateprofile_name = RED
+set rates_type = BETAFLIGHT
+set roll_rc_rate = 79
+set pitch_rc_rate = 82
+set yaw_rc_rate = 71
+set roll_expo = 10
+set pitch_expo = 6
+set yaw_expo = 10
+set roll_srate = 73
+set pitch_srate = 72
+set yaw_srate = 76
+
+rateprofile 3
+
+rateprofile 4
+
+rateprofile 5
+
+battery_profile 0
+
+# battery_profile 0
+set vbat_max_cell_voltage = 445
+
+battery_profile 1
+
+battery_profile 2
+
+# restore original rateprofile selection
+rateprofile 0
+
+# restore original battery_profile selection
+battery_profile 0
+
+# save configuration
+save

@@ -50,6 +50,7 @@
 #include "flight/failsafe.h"
 #include "flight/gps_rescue.h"
 #include "flight/imu.h"
+#include "flight/boost_mode.h"
 #include "flight/mixer_init.h"
 #include "flight/mixer_tricopter.h"
 #include "flight/pid.h"
@@ -757,6 +758,11 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
 #endif
 
 #ifdef USE_RPM_LIMIT
+#ifdef USE_BOOST_MODE
+    if (RPM_LIMIT_ACTIVE) {
+        boostModeUpdate();
+    }
+#endif
     if (RPM_LIMIT_ACTIVE && useDshotTelemetry && ARMING_FLAG(ARMED)) {
         applyRpmLimiter(&mixerRuntime);
     }

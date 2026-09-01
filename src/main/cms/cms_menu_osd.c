@@ -188,6 +188,9 @@ const OSD_Entry menuOsdActiveElemsEntries[] =
     {"CAMERA FRAME",       OME_VISIBLE | DYNAMIC, NULL, &osdConfig_item_pos[OSD_CAMERA_FRAME]},
     {"TOTAL FLIGHTS",      OME_VISIBLE | DYNAMIC, NULL, &osdConfig_item_pos[OSD_TOTAL_FLIGHTS]},
     {"AUX VALUE",          OME_VISIBLE | DYNAMIC, NULL, &osdConfig_item_pos[OSD_AUX_VALUE]},
+#ifdef USE_BOOST_MODE
+    {"BOOST",              OME_VISIBLE | DYNAMIC, NULL, &osdConfig_item_pos[OSD_BOOST_MODE]},
+#endif
 #ifdef USE_RANGEFINDER
     {"LIDAR DIST",         OME_VISIBLE | DYNAMIC, NULL, &osdConfig_item_pos[OSD_LIDAR_DIST]},
 #endif
